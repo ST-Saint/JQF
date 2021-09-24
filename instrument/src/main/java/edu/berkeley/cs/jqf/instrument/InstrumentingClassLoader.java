@@ -29,6 +29,7 @@
 package edu.berkeley.cs.jqf.instrument;
 
 import java.io.BufferedInputStream;
+import java.io.DataInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -74,7 +75,9 @@ public class InstrumentingClassLoader extends URLClassLoader {
             if (in == null) {
                 throw new ClassNotFoundException("Cannot find class " + name);
             }
-            originalBytecode = in.readAllBytes();
+            DataInputStream dataInputStream = new DataInputStream(in);
+            originalBytecode = dataInputStream.readAllBytes();
+            // originalBytecode = in.readAllBytes();
         } catch (IOException e) {
             throw new ClassNotFoundException("I/O exception while loading class.", e);
         }
