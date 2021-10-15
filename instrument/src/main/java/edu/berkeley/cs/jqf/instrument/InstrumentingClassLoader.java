@@ -38,6 +38,7 @@ import java.lang.instrument.IllegalClassFormatException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import org.apache.commons.io.IOUtils;
 
 import janala.instrument.SnoopInstructionTransformer;
 
@@ -45,7 +46,6 @@ import janala.instrument.SnoopInstructionTransformer;
  * @author Rohan Padhye
  */
 public class InstrumentingClassLoader extends URLClassLoader {
-
     private ClassFileTransformer transformer = new SnoopInstructionTransformer();
 
     public InstrumentingClassLoader(URL[] urls, ClassLoader parent) {
@@ -75,8 +75,7 @@ public class InstrumentingClassLoader extends URLClassLoader {
             if (in == null) {
                 throw new ClassNotFoundException("Cannot find class " + name);
             }
-            DataInputStream dataInputStream = new DataInputStream(in);
-            originalBytecode = dataInputStream.readAllBytes();
+            originalBytecode = IOUtils.toByteArray(in);
             // originalBytecode = in.readAllBytes();
         } catch (IOException e) {
             throw new ClassNotFoundException("I/O exception while loading class.", e);
@@ -96,7 +95,5 @@ public class InstrumentingClassLoader extends URLClassLoader {
             bytesToLoad = originalBytecode;
         }
         return defineClass(name, bytesToLoad, 0, bytesToLoad.length);
-
     }
-
 }
