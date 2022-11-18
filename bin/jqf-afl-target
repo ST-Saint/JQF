@@ -14,7 +14,8 @@ if [ ! -f "$ROOT_DIR/bin/afl-proxy" ]; then
 fi
 
 # Set defaults and parse options to override
-driver="edu.berkeley.cs.jqf.fuzz.afl.AFLDriver"
+# driver="edu.berkeley.cs.jqf.fuzz.afl.AFLDriver"
+driver="edu.berkeley.cs.jqf.fuzz.jcc.JccDriver"
 java_log="/dev/stdout"
 afl_log="/dev/null"
 
@@ -64,5 +65,3 @@ mkfifo "$j2a"
 
 # Run the proxy
 exec "$ROOT_DIR/bin/afl-proxy" $a2j $j2a $afl_log
-
-

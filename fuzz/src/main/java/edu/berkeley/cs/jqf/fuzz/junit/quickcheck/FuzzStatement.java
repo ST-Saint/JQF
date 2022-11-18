@@ -30,6 +30,8 @@
 package edu.berkeley.cs.jqf.fuzz.junit.quickcheck;
 
 import java.io.EOFException;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -60,8 +62,7 @@ import static edu.berkeley.cs.jqf.fuzz.guidance.Result.*;
 
 /**
  *
- * A JUnit {@link Statement} that will be run using guided fuzz
- * testing.
+ * A JUnit {@link Statement} that will be run using guided fuzz testing.
  *
  * @author Rohan Padhye
  */
@@ -74,12 +75,11 @@ public class FuzzStatement extends Statement {
     private final List<Throwable> failures = new ArrayList<>();
     private final Guidance guidance;
 
-    public FuzzStatement(FrameworkMethod method, TestClass testClass,
-                         GeneratorRepository generatorRepository, Guidance fuzzGuidance) {
+    public FuzzStatement(FrameworkMethod method, TestClass testClass, GeneratorRepository generatorRepository,
+            Guidance fuzzGuidance) {
         this.method = method;
         this.testClass = testClass;
-        this.generics = GenericsResolver.resolve(testClass.getJavaClass())
-                .method(method.getMethod());
+        this.generics = GenericsResolver.resolve(testClass.getJavaClass()).method(method.getMethod());
         this.generatorRepository = generatorRepository;
         this.expectedExceptions = Arrays.asList(method.getMethod().getExceptionTypes());
         this.guidance = fuzzGuidance;
@@ -94,17 +94,41 @@ public class FuzzStatement extends Statement {
     public void evaluate() throws Throwable {
         // Construct generators for each parameter
         List<Generator<?>> generators = Arrays.stream(method.getMethod().getParameters())
-                .map(this::createParameterTypeContext)
-                .map(this::produceGenerator)
-                .collect(Collectors.toList());
+                .map(this::createParameterTypeContext).map(this::produceGenerator).collect(Collectors.toList());
 
+        Boolean fuzzing = false;
+        Class<?> classz = testClass.getJavaClass();
+        Method pretestMethod = null, tearDownMethod = null;
+        Field commandLog = null, commandIndex = null;
+        if (classz.getCanonicalName().equals("org.apache.hadoop.hdfs.server.namenode.upgradefuzzing.FuzzingTest")) {
+            try {
+                pretestMethod = classz.getMethod("pretest");
+                commandLog = classz.getField("commandLog");
+                commandIndex = classz.getField("commandIndex");
+                tearDownMethod = classz.getMethod("tearDown");
+                fuzzing = true;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
         // Keep fuzzing until no more input or I/O error with guidance
         try {
-
+            int round = 0;
             // Keep fuzzing as long as guidance wants to
             while (guidance.hasInput()) {
+                // System.out.println("round: " + round);
                 Result result = INVALID;
                 Throwable error = null;
+
+                if (round == 0 && fuzzing) {
+                    tearDownMethod.invoke(null);
+
+                    // commandLog.set(null, "");
+                    // commandIndex.set(null, Integer.valueOf(0));
+
+                    pretestMethod.invoke(null);
+                }
+                round = (round + 1) % 100;
 
                 // Initialize guided fuzzing using a file-backed random number source
                 try {
@@ -115,9 +139,7 @@ public class FuzzStatement extends Statement {
                         StreamBackedRandom randomFile = new StreamBackedRandom(guidance.getInput(), Long.BYTES);
                         SourceOfRandomness random = new FastSourceOfRandomness(randomFile);
                         GenerationStatus genStatus = new NonTrackingGenerationStatus(random);
-                        args = generators.stream()
-                                .map(g -> g.generate(random, genStatus))
-                                .toArray();
+                        args = generators.stream().map(g -> g.generate(random, genStatus)).toArray();
 
                         // Let guidance observe the generated input args
                         guidance.observeGeneratedArgs(args);
@@ -145,7 +167,7 @@ public class FuzzStatement extends Statement {
 
                     // If we reached here, then the trial must be a success
                     result = SUCCESS;
-                } catch(InstrumentationException e) {
+                } catch (InstrumentationException e) {
                     // Throw a guidance exception outside to stop fuzzing
                     throw new GuidanceException(e);
                 } catch (GuidanceException e) {
@@ -158,7 +180,6 @@ public class FuzzStatement extends Statement {
                     result = TIMEOUT;
                     error = e;
                 } catch (Throwable e) {
-
                     // Check if this exception was expected
                     if (isExceptionExpected(e.getClass())) {
                         result = SUCCESS; // Swallow the error
@@ -172,18 +193,22 @@ public class FuzzStatement extends Statement {
                 // Inform guidance about the outcome of this trial
                 try {
                     guidance.handleResult(result, error);
+                    // System.out.println("handle result done");
                 } catch (GuidanceException e) {
                     throw e; // Propagate
                 } catch (Throwable e) {
                     // Anything else thrown from handleResult is an internal error, so wrap
                     throw new GuidanceException(e);
                 }
-
-
             }
         } catch (GuidanceException e) {
             System.err.println("Fuzzing stopped due to guidance exception: " + e.getMessage());
             throw e;
+        }
+
+        if (fuzzing) {
+            System.err.println("--------------------------------------------------\nexit here\n");
+            tearDownMethod.invoke(null);
         }
 
         if (failures.size() > 0) {
@@ -202,8 +227,8 @@ public class FuzzStatement extends Statement {
      * Returns whether an exception is expected to be thrown by a trial method
      *
      * @param e the class of an exception that is thrown
-     * @return <code>true</code> if e is a subclass of any exception specified
-     * in the <code>throws</code> clause of the trial method.
+     * @return <code>true</code> if e is a subclass of any exception specified in
+     *         the <code>throws</code> clause of the trial method.
      */
     private boolean isExceptionExpected(Class<? extends Throwable> e) {
         for (Class<?> expectedException : expectedExceptions) {

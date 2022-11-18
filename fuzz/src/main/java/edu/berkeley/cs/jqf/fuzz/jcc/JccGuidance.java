@@ -27,7 +27,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package edu.berkeley.cs.jqf.fuzz.afl;
+package edu.berkeley.cs.jqf.fuzz.jcc;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -40,20 +40,24 @@ import java.io.OutputStream;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
+
+import org.jacoco.core.data.ExecutionData;
+import org.jacoco.core.data.ExecutionDataStore;
 
 import edu.berkeley.cs.jqf.fuzz.guidance.Guidance;
 import edu.berkeley.cs.jqf.fuzz.guidance.GuidanceException;
 import edu.berkeley.cs.jqf.fuzz.guidance.Result;
 import edu.berkeley.cs.jqf.fuzz.guidance.TimeoutException;
-import edu.berkeley.cs.jqf.fuzz.util.Hashing;
-import edu.berkeley.cs.jqf.instrument.tracing.events.BranchEvent;
-import edu.berkeley.cs.jqf.instrument.tracing.events.CallEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
 
-
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 /**
  * A front-end that uses AFL for guided fuzzing.
  *
@@ -65,7 +69,7 @@ import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
  *
  * @author Rohan Padhye and Caroline Lemieux
  */
-public class AFLGuidance implements Guidance {
+public class JccGuidance implements Guidance {
 
     /** The file in which AFL will write its input. */
     protected File inputFile;
@@ -80,7 +84,8 @@ public class AFLGuidance implements Guidance {
     protected static final int COVERAGE_MAP_SIZE = 1 << 16;
 
     /** The "coverage" map that will be sent to AFL. */
-    protected byte[] traceBits = new byte[COVERAGE_MAP_SIZE];
+    // protected byte[] traceBits = new byte[COVERAGE_MAP_SIZE];
+    protected ExecutionDataStore dataStore = new ExecutionDataStore();
 
     /** Whether to keep executing more inputs. */
     protected boolean everything_ok = true;
@@ -100,6 +105,8 @@ public class AFLGuidance implements Guidance {
     /** Number of conditional jumps since last run was started. */
     private long branchCount;
 
+    public JccAgentClient client;
+
     /** Flag that is set if the current run exceeds time limit. */
     private volatile boolean timeoutHasOccurred;
 
@@ -107,19 +114,22 @@ public class AFLGuidance implements Guidance {
     private static final byte[] FEEDBACK_ZEROS = new byte[FEEDBACK_BUFFER_SIZE];
 
     /**
-     * Creates an instance of an AFLGuidance given file handles for I/O.
+     * Creates an instance of an JccGuidance given file handles for I/O.
      *
      * @param inputFile  the file that AFL will write inputs to
      * @param inPipe     a FIFO-like pipe for receiving messages from the AFL proxy
      * @param outPipe    a FIFO-like pipe for sending messages to the AFL proxy
      * @throws IOException  if any file or pipe could not be opened
      */
-    public AFLGuidance(File inputFile, File inPipe, File outPipe) throws IOException {
+    public JccGuidance(File inputFile, File inPipe, File outPipe) throws IOException {
         this.inputFile = inputFile;
         this.proxyInput = new BufferedInputStream(new FileInputStream(inPipe));
         this.proxyOutput = new BufferedOutputStream(new FileOutputStream(outPipe));
         this.feedback = ByteBuffer.allocate(FEEDBACK_BUFFER_SIZE);
         this.feedback.order(ByteOrder.LITTLE_ENDIAN);
+
+        client = new JccAgentClient(this);
+        new Thread(client).start();
 
         // Try to parse the single-run timeout
         String timeout = System.getProperty("jqf.afl.TIMEOUT");
@@ -134,15 +144,23 @@ public class AFLGuidance implements Guidance {
     }
 
     /**
-     * Creates an instance of an AFLGuidance given file names for I/O.
+     * Creates an instance of an JccGuidance given file names for I/O.
      *
      * @param inputFileName  the file that AFL will write inputs to
      * @param inPipeName     a FIFO-like pipe for receiving messages from the AFL proxy
      * @param outPipeName    a FIFO-like pipe for sending messages to the AFL proxy
      * @throws IOException  if any file or pipe could not be opened
      */
-    public AFLGuidance(String inputFileName, String inPipeName, String outPipeName) throws IOException {
+    public JccGuidance(String inputFileName, String inPipeName, String outPipeName) throws IOException {
         this(new File(inputFileName), new File(inPipeName), new File(outPipeName));
+    }
+
+    public void putData(final ExecutionData data){
+        final Long id = Long.valueOf(data.getId());
+        System.out.println("put id " + id + " name " + data.getName() + " " + data.hasHits());
+        dataStore.put(data);
+        ExecutionData ddata = dataStore.get(id);
+        System.out.println("put id " + id + " name " + ddata.getName() + " " + ddata.hasHits());
     }
 
     /**
@@ -202,18 +220,20 @@ public class AFLGuidance implements Guidance {
      */
     @Override
     public boolean hasInput() {
-
+        // System.out.println("has input ok: " + everything_ok);
         if (everything_ok) {
             // Get a 4-byte signal from AFL
             byte[] signal = new byte[4];
             try {
                 int received = proxyInput.read(signal, 0, 4);
+                // System.out.println("get received: " + received);
                 if (received != 4) {
                     throw new IOException("Could not read `ready` from AFL");
                 }
 
-                // Reset trace-bits
-                Arrays.fill(traceBits, (byte) 0);
+                // TODO Reset trace-bits
+                // Arrays.fill(traceBits, (byte) 0);
+                dataStore.reset();
 
             } catch (IOException e) {
                 everything_ok = false;
@@ -260,11 +280,20 @@ public class AFLGuidance implements Guidance {
         }
 
         // Reset the feedback buffer for a new run
+        // System.out.println("[jcc] collect and reset execution data");
+
         clearFeedbackBuffer();
+        // DateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+        // System.out.println(formatter.format(System.currentTimeMillis()));
+
+        Long ts0 = System.currentTimeMillis(), ts1;
+        client.collect();
+        ts1 = System.currentTimeMillis();
+        System.out.println(ts1-ts0);
 
         // Set at least one tracebit so that AFL doesn't complain about
         // no instrumentation
-        traceBits[0] = traceBits[0] == 0 ? 1 : traceBits[0];
+        // traceBits[0] = traceBits[0] == 0 ? 1 : traceBits[0];
 
 
         // Check result and set status value
@@ -313,11 +342,31 @@ public class AFLGuidance implements Guidance {
 
         // Send the status value to AFL
         feedback.putInt(status);
+        Map<Long, ExecutionData> entries = dataStore.getEntries();
 
-        // Send trace-bits to AFL as a contiguous array
-        for (int i = 0; i < COVERAGE_MAP_SIZE; i++) {
-            feedback.put(traceBits[i]);
+        int map_size = 1 << 16, cnt = 0;
+
+        List<Long> sortedKeys=new ArrayList(entries.keySet());
+        Collections.sort(sortedKeys);
+        for (Long id: sortedKeys) {
+            ExecutionData data = dataStore.get(id);
+            boolean[] probes = data.getProbes();
+            System.out.println("id: "+ id + " name " + data.getName() + " " + data.hasHits() + " " + probes.length);
+            for(int i = 0 ; i < probes.length; ++i ){
+                feedback.put(new byte[]{(byte)(probes[i]?1:0)});
+            }
+            // System.out.println("feedback size: " + feedback.position());
+            cnt += probes.length;
         }
+        // System.out.println("total " + map_size + " " + cnt);
+        for(int i = 0 ; i < map_size - cnt - 1 ; ++i){
+            feedback.put(new byte[]{0});
+        }
+        feedback.put(new byte[]{1});
+        // Send trace-bits to AFL as a contiguous array
+        // for (int i = 0; i < COVERAGE_MAP_SIZE; i++) {
+        //     feedback.put(traceBits[i]);
+        // }
 
 
         // Send feedback to AFL
@@ -346,46 +395,11 @@ public class AFLGuidance implements Guidance {
     }
 
     /**
-     * Records branch coverage by snooping on branch events
-     * and incrementing the branch-specific counter in
-     * the tracebits map.
+     * No event will be triggered in Jacoco Guidance
      *
      * @param e  the trace event to handle
      */
-    protected void handleEvent(TraceEvent e) {
-        if (e instanceof BranchEvent) {
-            BranchEvent b = (BranchEvent) e;
-            // Map branch IID to [1, MAP_SIZE); the odd bound also reduces collisions
-            int edgeId = 1 + Hashing.hash1(b.getIid(), b.getArm(), COVERAGE_MAP_SIZE-1);
-
-            // Increment the 8-bit branch counter
-            incrementTraceBits(edgeId);
-
-            // Check for possible timeouts every so often
-            // checkForTimeouts();
-
-        } else if (e instanceof CallEvent) {
-
-            // Map IID to [1, MAP_SIZE]; the odd bound also reduces collisions
-            int edgeId = 1 + Hashing.hash(e.getIid(), COVERAGE_MAP_SIZE-1);
-
-            // Increment the 8-bit branch counter
-            incrementTraceBits(edgeId);
-        }
-
-    }
-
-    /**
-     * Increments the 8-bit counter at given index.
-     *
-     * <p>Overflows are possible but ignored (as in AFL).
-     *
-     * @param index the key in the trace bits map
-     */
-    protected void incrementTraceBits(int index) {
-        traceBits[index]++;
-    }
-
+    protected void handleEvent(TraceEvent e) {}
 
     /** Clears the feedback buffer by resetting it to zero. */
     protected void clearFeedbackBuffer() {

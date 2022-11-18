@@ -161,61 +161,61 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
   <build>
     <plugins>
       <plugin>
-        <artifactId>maven-resources-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>copy-seeds</id>
-            <phase>test</phase>
-            <goals>
-              <goal>copy-resources</goal>
-            </goals>
-            <configuration>
-              <outputDirectory>
-              ${basedir}/target/seeds</outputDirectory>
-              <resources>
-                <resource>
-                  <directory>src/test/seeds</directory>
-                </resource>
-              </resources>
-            </configuration>
-          </execution>
-        </executions>
+	<artifactId>maven-resources-plugin</artifactId>
+	<executions>
+	  <execution>
+	    <id>copy-seeds</id>
+	    <phase>test</phase>
+	    <goals>
+	      <goal>copy-resources</goal>
+	    </goals>
+	    <configuration>
+	      <outputDirectory>
+	      ${basedir}/target/seeds</outputDirectory>
+	      <resources>
+		<resource>
+		  <directory>src/test/seeds</directory>
+		</resource>
+	      </resources>
+	    </configuration>
+	  </execution>
+	</executions>
       </plugin>
       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>copy-dependencies</id>
-            <phase>package</phase>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <configuration>
-              <includeScope>test</includeScope>
-            </configuration>
-          </execution>
-        </executions>
+	<groupId>org.apache.maven.plugins</groupId>
+	<artifactId>maven-dependency-plugin</artifactId>
+	<executions>
+	  <execution>
+	    <id>copy-dependencies</id>
+	    <phase>package</phase>
+	    <goals>
+	      <goal>copy-dependencies</goal>
+	    </goals>
+	    <configuration>
+	      <includeScope>test</includeScope>
+	    </configuration>
+	  </execution>
+	</executions>
       </plugin>
       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <source>1.8</source>
-          <target>1.8</target>
-          <skipTests>true</skipTests>
-        </configuration>
+	<groupId>org.apache.maven.plugins</groupId>
+	<artifactId>maven-surefire-plugin</artifactId>
+	<configuration>
+	  <source>11</source>
+	  <target>11</target>
+	  <skipTests>true</skipTests>
+	</configuration>
       </plugin>
       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-deploy-plugin</artifactId>
-        <configuration>
-          <skip>true</skip>
-        </configuration>
+	<groupId>org.apache.maven.plugins</groupId>
+	<artifactId>maven-deploy-plugin</artifactId>
+	<configuration>
+	  <skip>true</skip>
+	</configuration>
       </plugin>
       <plugin>
-        <groupId>edu.berkeley.cs.jqf</groupId>
-        <artifactId>jqf-maven-plugin</artifactId>
+	<groupId>edu.berkeley.cs.jqf</groupId>
+	<artifactId>jqf-maven-plugin</artifactId>
       </plugin>
     </plugins>
   </build>
