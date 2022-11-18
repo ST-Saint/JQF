@@ -47,17 +47,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
-import org.jacoco.core.data.ExecutionData;
-import org.jacoco.core.data.ExecutionDataStore;
+
+// import org.jacoco.core.data.ExecutionData;
+// import org.jacoco.core.data.ExecutionDataStore;
+import org.jacoco.agent.rt.internal.core.data.ExecutionData;
+import org.jacoco.agent.rt.internal.core.data.ExecutionDataStore;
+import org.jacoco.agent.rt.internal.core.runtime.RuntimeData;
 
 import edu.berkeley.cs.jqf.fuzz.guidance.Guidance;
 import edu.berkeley.cs.jqf.fuzz.guidance.GuidanceException;
 import edu.berkeley.cs.jqf.fuzz.guidance.Result;
 import edu.berkeley.cs.jqf.fuzz.guidance.TimeoutException;
 import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
-
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 /**
  * A front-end that uses AFL for guided fuzzing.
  *
@@ -86,6 +87,8 @@ public class JccGuidance implements Guidance {
     /** The "coverage" map that will be sent to AFL. */
     // protected byte[] traceBits = new byte[COVERAGE_MAP_SIZE];
     protected ExecutionDataStore dataStore = new ExecutionDataStore();
+
+    public static RuntimeData runtimeData;
 
     /** Whether to keep executing more inputs. */
     protected boolean everything_ok = true;
@@ -128,8 +131,8 @@ public class JccGuidance implements Guidance {
         this.feedback = ByteBuffer.allocate(FEEDBACK_BUFFER_SIZE);
         this.feedback.order(ByteOrder.LITTLE_ENDIAN);
 
-        client = new JccAgentClient(this);
-        new Thread(client).start();
+        // client = new JccAgentClient(this);
+        // new Thread(client).start();
 
         // Try to parse the single-run timeout
         String timeout = System.getProperty("jqf.afl.TIMEOUT");
@@ -157,10 +160,8 @@ public class JccGuidance implements Guidance {
 
     public void putData(final ExecutionData data){
         final Long id = Long.valueOf(data.getId());
-        System.out.println("put id " + id + " name " + data.getName() + " " + data.hasHits());
         dataStore.put(data);
         ExecutionData ddata = dataStore.get(id);
-        System.out.println("put id " + id + " name " + ddata.getName() + " " + ddata.hasHits());
     }
 
     /**
@@ -286,11 +287,6 @@ public class JccGuidance implements Guidance {
         // DateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
         // System.out.println(formatter.format(System.currentTimeMillis()));
 
-        Long ts0 = System.currentTimeMillis(), ts1;
-        client.collect();
-        ts1 = System.currentTimeMillis();
-        System.out.println(ts1-ts0);
-
         // Set at least one tracebit so that AFL doesn't complain about
         // no instrumentation
         // traceBits[0] = traceBits[0] == 0 ? 1 : traceBits[0];
@@ -342,7 +338,10 @@ public class JccGuidance implements Guidance {
 
         // Send the status value to AFL
         feedback.putInt(status);
-        Map<Long, ExecutionData> entries = dataStore.getEntries();
+
+        dataStore = runtimeData.getStore();
+        Map<Long, ExecutionData> entries = dataStore.getEntries(); // dataStore.getEntries();
+
 
         int map_size = 1 << 16, cnt = 0;
 
@@ -351,7 +350,7 @@ public class JccGuidance implements Guidance {
         for (Long id: sortedKeys) {
             ExecutionData data = dataStore.get(id);
             boolean[] probes = data.getProbes();
-            System.out.println("id: "+ id + " name " + data.getName() + " " + data.hasHits() + " " + probes.length);
+            // System.out.println("id: "+ id + " name " + data.getName() + " " + data.hasHits() + " " + probes.length);
             for(int i = 0 ; i < probes.length; ++i ){
                 feedback.put(new byte[]{(byte)(probes[i]?1:0)});
             }
@@ -363,6 +362,8 @@ public class JccGuidance implements Guidance {
             feedback.put(new byte[]{0});
         }
         feedback.put(new byte[]{1});
+
+
         // Send trace-bits to AFL as a contiguous array
         // for (int i = 0; i < COVERAGE_MAP_SIZE; i++) {
         //     feedback.put(traceBits[i]);

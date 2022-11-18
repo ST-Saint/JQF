@@ -8,15 +8,23 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jacoco.core.data.ExecutionData;
-import org.jacoco.core.data.ExecutionDataWriter;
-import org.jacoco.core.data.IExecutionDataVisitor;
-import org.jacoco.core.data.ISessionInfoVisitor;
-import org.jacoco.core.data.SessionInfo;
-import org.jacoco.core.runtime.RemoteControlReader;
-import org.jacoco.core.runtime.RemoteControlWriter;
+// import org.jacoco.core.data.ExecutionData;
+// import org.jacoco.core.data.ExecutionDataWriter;
+// import org.jacoco.core.data.IExecutionDataVisitor;
+// import org.jacoco.core.data.ISessionInfoVisitor;
+// import org.jacoco.core.data.SessionInfo;
+// import org.jacoco.core.runtime.RemoteControlReader;
+// import org.jacoco.core.runtime.RemoteControlWriter;
+import org.jacoco.agent.rt.internal.core.data.ExecutionData;
+import org.jacoco.agent.rt.internal.core.data.ExecutionDataWriter;
+import org.jacoco.agent.rt.internal.core.data.IExecutionDataVisitor;
+import org.jacoco.agent.rt.internal.core.data.ISessionInfoVisitor;
+import org.jacoco.agent.rt.internal.core.data.SessionInfo;
+import org.jacoco.agent.rt.internal.core.runtime.RemoteControlReader;
+import org.jacoco.agent.rt.internal.core.runtime.RemoteControlWriter;
 
 import edu.berkeley.cs.jqf.fuzz.guidance.GuidanceException;
+
 
 public class JccAgentClient
         implements Runnable, ISessionInfoVisitor, IExecutionDataVisitor {
