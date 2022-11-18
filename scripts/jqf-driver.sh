@@ -17,7 +17,7 @@ INST_DIR="${ROOT_DIR}/instrument/target/"
 FUZZ_JAR="${FUZZ_DIR}/$project-fuzz-$version.jar"
 
 # INST_JAR="${INST_DIR}/$project-instrument-$version.jar"
-INST_JAR="/home/yayu/Project/Upgrade-Fuzzing/jqf/fuzz/target/dependency/org.jacoco.agent-47fc56a009-runtime.jar"
+INST_JAR="${FUZZ_DIR}/dependency/org.jacoco.agent-47fc56a009-runtime.jar"
 # INST_JAR="/home/yayu/Downloads/jacoco/lib/jacocoagent.jar"
 
 # INST_JAR="/home/yayu/Downloads/jacoco/lib/jacocoagent.jar=destfile=/home/yayu/tmp/hadoop/hadoop-jacoco.exec,classdumpdir=/home/yayu/hadoop/hadoop-class/,output=file,address=localhost"
@@ -38,7 +38,7 @@ export CLASSPATH="${CLASSPATH}:${INST_DIR}/classes"
 
 # Java Agent config (can be turned off using env var)
 if [ -z "$JQF_DISABLE_INSTRUMENTATION" ]; then
-    JAVAAGENT="-javaagent:${INST_JAR}=includes=PngTest,excludes=java.*:jdk.*:org.jacoco.*,output=file"
+    JAVAAGENT="-javaagent:${INST_JAR}=includes=*,excludes=java.*:jdk.*:com.sun.proxy.*:com.intellij.*:edu.berkeley.cs.jqf.fuzz.*:org.junit.*:com.pholser.junit.quickcheck.*:org.hamcrest.*:org.jacoco.*,output=none,append=false"
 fi
 
 # Run Java

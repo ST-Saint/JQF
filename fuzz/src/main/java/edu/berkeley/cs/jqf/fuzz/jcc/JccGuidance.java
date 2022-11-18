@@ -32,6 +32,7 @@ package edu.berkeley.cs.jqf.fuzz.jcc;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -47,11 +48,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
-
 // import org.jacoco.core.data.ExecutionData;
 // import org.jacoco.core.data.ExecutionDataStore;
 import org.jacoco.agent.rt.internal.core.data.ExecutionData;
 import org.jacoco.agent.rt.internal.core.data.ExecutionDataStore;
+import org.jacoco.agent.rt.internal.core.data.ExecutionDataWriter;
 import org.jacoco.agent.rt.internal.core.runtime.RuntimeData;
 
 import edu.berkeley.cs.jqf.fuzz.guidance.Guidance;
@@ -357,6 +358,15 @@ public class JccGuidance implements Guidance {
             // System.out.println("feedback size: " + feedback.position());
             cnt += probes.length;
         }
+
+        // ExecutionDataWriter fw;
+        // try {
+        //     fw = new ExecutionDataWriter(new FileOutputStream("jacoco.exec"));
+        //     runtimeData.collect(fw, fw, true);
+        // } catch (IOException e) {
+        //     e.printStackTrace();
+        // }
+
         // System.out.println("total " + map_size + " " + cnt);
         for(int i = 0 ; i < map_size - cnt - 1 ; ++i){
             feedback.put(new byte[]{0});
