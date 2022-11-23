@@ -38,7 +38,7 @@ export CLASSPATH="${CLASSPATH}:${INST_DIR}/classes"
 
 # Java Agent config (can be turned off using env var)
 if [ -z "$JQF_DISABLE_INSTRUMENTATION" ]; then
-    JAVAAGENT="-javaagent:${INST_JAR}=includes=*,excludes=java.*:jdk.*:com.sun.proxy.*:com.intellij.*:edu.berkeley.cs.jqf.fuzz.*:org.junit.*:com.pholser.junit.quickcheck.*:org.hamcrest.*:org.jacoco.*,output=none,append=false"
+    JAVAAGENT="-javaagent:${INST_JAR}=includes=*,excludes=java.*:jdk.*:com.sun.proxy.*:com.intellij.*:janala.logger.*:edu.berkeley.cs.jqf.*:org.junit.*:com.pholser.junit.quickcheck.*:ru.vyarus.java.generics.resolver.*:ognl.*:org.hamcrest.*:org.omg.*:org.netbeans.*:org.mozilla.javascript.gen.*:org.slf4j.*:org.javaruntype.*:org.jacoco.*,output=none,append=false"
 fi
 
 # Run Java
