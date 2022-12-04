@@ -31,6 +31,7 @@ package edu.berkeley.cs.jqf.fuzz.jcc;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.FileInputStream;
@@ -246,6 +247,8 @@ public class JccGuidance implements Guidance {
         return everything_ok;
     }
 
+    static Integer round = 0;
+
     /**
      * Notifies the AFL proxy that a run has completed and whether
      * it was a success. 1
@@ -350,22 +353,41 @@ public class JccGuidance implements Guidance {
         Collections.sort(sortedKeys);
         for (Long id: sortedKeys) {
             ExecutionData data = dataStore.get(id);
-            boolean[] probes = data.getProbes();
+            int[] probes = data.getProbes();
             // System.out.println("id: "+ id + " name " + data.getName() + " " + data.hasHits() + " " + probes.length);
             for(int i = 0 ; i < probes.length; ++i ){
-                feedback.put(new byte[]{(byte)(probes[i]?1:0)});
+                feedback.put(new byte[]{(byte)(probes[i]<256?probes[i]:255)});
             }
             // System.out.println("feedback size: " + feedback.position());
             cnt += probes.length;
         }
 
-        // ExecutionDataWriter fw;
-        // try {
-        //     fw = new ExecutionDataWriter(new FileOutputStream("jacoco.exec"));
-        //     runtimeData.collect(fw, fw, true);
-        // } catch (IOException e) {
-        //     e.printStackTrace();
+
+        // if( round < 32 ){
+        //     ExecutionDataWriter fw;
+        //     try {
+        //         fw = new ExecutionDataWriter(new FileOutputStream("jacoco"+ round +".exec"));
+        //         runtimeData.collect(fw, fw, false);
+
+        //         BufferedWriter writer = new BufferedWriter(new FileWriter("jacoco" + round +".log" ));
+
+        //         for (Long id: sortedKeys) {
+        //             ExecutionData data = dataStore.get(id);
+        //             int[] probes = data.getProbes();
+        //             // System.out.println("id: "+ id + " name " + data.getName() + " " + data.hasHits() + " " + probes.length);
+        //             writer.write(data.getName()+"\n");
+        //             for(int i = 0 ; i < probes.length; ++i ){
+        //                 writer.write(probeToStr(probes[i]));
+        //             }
+        //             writer.write("\n");
+        //         }
+        //         writer.close();
+        //     } catch (IOException e) {
+        //         e.printStackTrace();
+        //     }
+        //     round += 1;
         // }
+
 
         // System.out.println("total " + map_size + " " + cnt);
         for(int i = 0 ; i < map_size - cnt - 1 ; ++i){
@@ -433,5 +455,16 @@ public class JccGuidance implements Guidance {
         }
     }
 
+    private String probeToStr(int value){
+        if( value < 256 ){
+            String str = Integer.toString(value/100) + Integer.toString((value%100)/10) + Integer.toString(value%10);
+            return str;
+        }else{
+            return "255";
+        }
+    }
 
+    public void reset(){
+        runtimeData.reset();
+    }
 }

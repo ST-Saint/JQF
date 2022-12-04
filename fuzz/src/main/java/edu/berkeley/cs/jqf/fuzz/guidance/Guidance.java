@@ -222,4 +222,7 @@ public interface Guidance {
         new TrialRunner(testClass.getJavaClass(), method, args).run();
     }
 
+    default public void reset(){
+    }
+
 }

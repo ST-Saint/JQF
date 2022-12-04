@@ -85,6 +85,8 @@ public class FuzzStatement extends Statement {
         this.guidance = fuzzGuidance;
     }
 
+    static boolean firstLoad = true;
+
     /**
      * Run the test.
      *
@@ -143,6 +145,21 @@ public class FuzzStatement extends Statement {
 
                         // Let guidance observe the generated input args
                         guidance.observeGeneratedArgs(args);
+
+                        if( firstLoad ){
+                            firstLoad = false;
+                            StreamBackedRandom reRandomFile = new StreamBackedRandom(guidance.getInput(), Long.BYTES);
+                            GenerationStatus regenStatus = new NonTrackingGenerationStatus(random);
+                            SourceOfRandomness reRandom = new FastSourceOfRandomness(reRandomFile);
+                            Object[] reArgs = generators.stream().map(g -> g.generate(reRandom, regenStatus)).toArray();
+                            try{
+                                guidance.run(testClass, method, reArgs);
+                            }catch (Throwable e) {
+                                // e.printStackTrace();
+                            }
+                            System.out.println("firstLoad reset");
+                            guidance.reset();
+                        }
                     } catch (IllegalStateException e) {
                         if (e.getCause() instanceof EOFException) {
                             // This happens when we reach EOF before reading all the random values.
@@ -188,6 +205,10 @@ public class FuzzStatement extends Statement {
                         error = e;
                         failures.add(e);
                     }
+                }
+
+                if( firstLoad ){
+                    firstLoad = false;
                 }
 
                 // Inform guidance about the outcome of this trial
