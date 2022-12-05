@@ -54,12 +54,8 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
     <dependency>
       <groupId>com.github.ST-Saint</groupId>
       <artifactId>jacoco</artifactId>
-      <version>47fc56a009</version>
+      <version>4845bbc1d2</version>
     </dependency>
-    <!-- <dependency> -->
-    <!--   <groupId>org.jacoco</groupId> -->
-    <!--   <artifactId>org.jacoco.report</artifactId> -->
-    <!-- </dependency> -->
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
