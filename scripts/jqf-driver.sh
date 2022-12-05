@@ -17,8 +17,8 @@ INST_DIR="${ROOT_DIR}/instrument/target/"
 FUZZ_JAR="${FUZZ_DIR}/$project-fuzz-$version.jar"
 
 # INST_JAR="${INST_DIR}/$project-instrument-$version.jar"
-INST_JAR="${FUZZ_DIR}/dependency/org.jacoco.agent-47fc56a009-runtime.jar"
-# INST_JAR="/home/yayu/Downloads/jacoco/lib/jacocoagent.jar"
+INST_JAR="${FUZZ_DIR}/dependency/org.jacoco.agent-8de880fde6-runtime.jar"
+# INST_JAR="/home/yayu/Project/Upgrade-Fuzzing/jacoco/jacoco/target/lib/jacocoagent.jar"
 
 # INST_JAR="/home/yayu/Downloads/jacoco/lib/jacocoagent.jar=destfile=/home/yayu/tmp/hadoop/hadoop-jacoco.exec,classdumpdir=/home/yayu/hadoop/hadoop-class/,output=file,address=localhost"
 

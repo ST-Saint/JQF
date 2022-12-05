@@ -148,22 +148,24 @@ public class FuzzStatement extends Statement {
 
                         if( firstLoad ){
                             firstLoad = false;
-                            StreamBackedRandom reRandomFile = new StreamBackedRandom(guidance.getInput(), Long.BYTES);
-                            GenerationStatus regenStatus = new NonTrackingGenerationStatus(random);
-                            SourceOfRandomness reRandom = new FastSourceOfRandomness(reRandomFile);
-                            Object[] reArgs = generators.stream().map(g -> g.generate(reRandom, regenStatus)).toArray();
-                            try{
-                                guidance.run(testClass, method, reArgs);
-                            }catch (Throwable e) {
-                                // e.printStackTrace();
-                            }
-                            System.out.println("firstLoad reset");
-                            guidance.reset();
+                            // StreamBackedRandom reRandomFile = new StreamBackedRandom(guidance.getInput(), Long.BYTES);
+                            // GenerationStatus regenStatus = new NonTrackingGenerationStatus(random);
+                            // SourceOfRandomness reRandom = new FastSourceOfRandomness(reRandomFile);
+                            // Object[] reArgs = generators.stream().map(g -> g.generate(reRandom, regenStatus)).toArray();
+                            // try{
+                            //     guidance.run(testClass, method, reArgs);
+                            // }catch (Throwable e) {
+                            //     // e.printStackTrace();
+                            // }
+                            // System.out.println("firstLoad reset");
+                            // guidance.reset();
                         }
                     } catch (IllegalStateException e) {
                         if (e.getCause() instanceof EOFException) {
                             // This happens when we reach EOF before reading all the random values.
                             // The only thing we can do is try again
+                            // System.out.println("reach EOF");
+                            e.printStackTrace();
                             continue;
                         } else {
                             throw e;

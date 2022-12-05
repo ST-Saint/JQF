@@ -110,10 +110,17 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
 	<artifactId>asm</artifactId>
 	<version>9.1</version>
       </dependency>
+    <!--   <dependency> -->
+    <!--     <groupId>org.jacoco</groupId> -->
+    <!--     <artifactId>report</artifactId> -->
+    <!--     <version>1.0</version> -->
+    <!--     <scope>system</scope> -->
+    <!--     <systemPath>/home/yayu/Project/Upgrade-Fuzzing/jacoco/org.jacoco.report/target/org.jacoco.report-0.8.8-SNAPSHOT.jar</systemPath> -->
+    <!-- </dependency> -->
       <dependency>
-	<groupId>org.jacoco</groupId>
+	<groupId>com.github.st-saint</groupId>
 	<artifactId>org.jacoco.report</artifactId>
-	<version>0.8.7</version>
+	<version>8de880fde6</version>
       </dependency>
       <dependency>
 	<groupId>edu.berkeley.cs.jqf</groupId>

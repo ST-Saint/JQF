@@ -49,12 +49,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
-// import org.jacoco.core.data.ExecutionData;
-// import org.jacoco.core.data.ExecutionDataStore;
-import org.jacoco.agent.rt.internal.core.data.ExecutionData;
-import org.jacoco.agent.rt.internal.core.data.ExecutionDataStore;
-import org.jacoco.agent.rt.internal.core.data.ExecutionDataWriter;
-import org.jacoco.agent.rt.internal.core.runtime.RuntimeData;
+import org.jacoco.core.data.ExecutionData;
+import org.jacoco.core.data.ExecutionDataStore;
+import org.jacoco.core.data.ExecutionDataWriter;
+import org.jacoco.core.runtime.RuntimeData;
 
 import edu.berkeley.cs.jqf.fuzz.guidance.Guidance;
 import edu.berkeley.cs.jqf.fuzz.guidance.GuidanceException;
@@ -110,8 +108,6 @@ public class JccGuidance implements Guidance {
     /** Number of conditional jumps since last run was started. */
     private long branchCount;
 
-    public JccAgentClient client;
-
     /** Flag that is set if the current run exceeds time limit. */
     private volatile boolean timeoutHasOccurred;
 
@@ -132,9 +128,6 @@ public class JccGuidance implements Guidance {
         this.proxyOutput = new BufferedOutputStream(new FileOutputStream(outPipe));
         this.feedback = ByteBuffer.allocate(FEEDBACK_BUFFER_SIZE);
         this.feedback.order(ByteOrder.LITTLE_ENDIAN);
-
-        // client = new JccAgentClient(this);
-        // new Thread(client).start();
 
         // Try to parse the single-run timeout
         String timeout = System.getProperty("jqf.afl.TIMEOUT");
@@ -353,6 +346,9 @@ public class JccGuidance implements Guidance {
         Collections.sort(sortedKeys);
         for (Long id: sortedKeys) {
             ExecutionData data = dataStore.get(id);
+            if( !data.hasHits() ){
+                continue;
+            }
             int[] probes = data.getProbes();
             // System.out.println("id: "+ id + " name " + data.getName() + " " + data.hasHits() + " " + probes.length);
             for(int i = 0 ; i < probes.length; ++i ){
