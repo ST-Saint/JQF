@@ -57,24 +57,31 @@ public class InputStreamGenerator extends Generator<InputStream> {
     @Override
     public InputStream generate(SourceOfRandomness sourceOfRandomness, GenerationStatus generationStatus) {
         return new InputStream() {
-           @Override
-           public int read() throws IOException {
-               // Keep asking for new random bytes until the
-               // SourceOfRandomness runs out of parameters. This is designed
-               // to work with fixed-size parameter sequences, such as when
-               // fuzzing with AFL.
-               try {
-                   byte nextByte = sourceOfRandomness.nextByte(Byte.MIN_VALUE, Byte.MAX_VALUE);
-                   int nextInt = nextByte & 0xFF;
-                   return nextInt;
-               } catch (IllegalStateException e) {
-                   if (e.getCause() instanceof EOFException) {
-                       return -1;
-                   } else {
-                       throw e;
-                   }
-               }
-           }
-       };
+            private int eofFlag = 0;
+            @Override
+            public int read() throws IOException {
+                // Keep asking for new random bytes until the
+                // SourceOfRandomness runs out of parameters. This is designed
+                // to work with fixed-size parameter sequences, such as when
+                // fuzzing with AFL.
+                try {
+                    byte nextByte = sourceOfRandomness.nextByte(Byte.MIN_VALUE, Byte.MAX_VALUE);
+                    int nextInt = nextByte & 0xFF;
+                    return nextInt;
+                } catch (IllegalStateException e) {
+                    if (e.getCause() instanceof EOFException) {
+                        // System.out.println("input generate read eof");
+                        if( eofFlag < 1000 ){
+                            eofFlag += 1;
+                            return -1;
+                        }else{
+                            throw e;
+                        }
+                    } else {
+                        throw e;
+                    }
+                }
+            }
+        };
     }
 }

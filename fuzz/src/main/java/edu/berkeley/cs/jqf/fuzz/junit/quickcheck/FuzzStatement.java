@@ -30,6 +30,9 @@
 package edu.berkeley.cs.jqf.fuzz.junit.quickcheck;
 
 import java.io.EOFException;
+import java.io.BufferedInputStream;
+import java.io.FileInputStream;
+import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
@@ -148,17 +151,18 @@ public class FuzzStatement extends Statement {
 
                         if( firstLoad ){
                             firstLoad = false;
-                            // StreamBackedRandom reRandomFile = new StreamBackedRandom(guidance.getInput(), Long.BYTES);
-                            // GenerationStatus regenStatus = new NonTrackingGenerationStatus(random);
-                            // SourceOfRandomness reRandom = new FastSourceOfRandomness(reRandomFile);
-                            // Object[] reArgs = generators.stream().map(g -> g.generate(reRandom, regenStatus)).toArray();
-                            // try{
-                            //     guidance.run(testClass, method, reArgs);
-                            // }catch (Throwable e) {
-                            //     // e.printStackTrace();
-                            // }
-                            // System.out.println("firstLoad reset");
-                            // guidance.reset();
+                            BufferedInputStream bis = new BufferedInputStream(new FileInputStream(new File("/dev/random")));
+                            StreamBackedRandom reRandomFile = new StreamBackedRandom(bis, Long.BYTES);
+                            GenerationStatus regenStatus = new NonTrackingGenerationStatus(random);
+                            SourceOfRandomness reRandom = new FastSourceOfRandomness(reRandomFile);
+                            Object[] reArgs = generators.stream().map(g -> g.generate(reRandom, regenStatus)).toArray();
+                            try{
+                                guidance.run(testClass, method, reArgs);
+                            }catch (Throwable e) {
+                                // e.printStackTrace();
+                            }
+                            System.out.println("firstLoad reset");
+                            guidance.reset();
                         }
                     } catch (IllegalStateException e) {
                         if (e.getCause() instanceof EOFException) {
@@ -209,9 +213,7 @@ public class FuzzStatement extends Statement {
                     }
                 }
 
-                if( firstLoad ){
-                    firstLoad = false;
-                }
+                firstLoad = false;
 
                 // Inform guidance about the outcome of this trial
                 try {
